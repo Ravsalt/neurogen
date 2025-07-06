@@ -191,17 +191,28 @@ const Home = () => {
     }
   }, [prompt, isGenerating, generateImageUrl]);
 
-  const handleDownload = useCallback((e: React.MouseEvent) => {
+  const handleDownload = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
     if (!generatedImage) return;
-    
-    const link = document.createElement('a');
-    link.href = generatedImage;
-    const extension = settings.model === 'gptimage' && settings.transparent ? 'png' : 'jpg';
-    link.download = `generated-${Date.now()}.${extension}`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+
+    try {
+      const response = await fetch(generatedImage);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = url;
+      const extension = settings.model === 'gptimage' && settings.transparent ? 'png' : 'jpg';
+      link.download = `generated-${Date.now()}.${extension}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url); // Clean up the object URL
+
+    } catch (error) {
+      console.error('Error downloading image:', error);
+      // Optionally, show an error message to the user
+    }
   }, [generatedImage, settings.model, settings.transparent]);
 
   // Memoize file change handler
