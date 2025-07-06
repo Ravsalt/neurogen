@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import { memo } from 'react';
 import { FiImage } from 'react-icons/fi';
 
 const ImagePreview = memo(({ imageUrl, prompt, isLoading }: { imageUrl: string | null; prompt: string; isLoading: boolean }) => {

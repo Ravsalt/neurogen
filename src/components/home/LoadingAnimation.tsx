@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import { memo } from 'react';
 
 const LoadingAnimation = memo(({ isVisible }: { isVisible: boolean }) => {
   if (!isVisible) return null;
