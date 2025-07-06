@@ -1,10 +1,11 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { FiImage, FiDownload, FiRefreshCw, FiUpload, FiChevronDown, FiChevronUp, FiInfo, FiSettings } from 'react-icons/fi';
 import PromptInput from '../components/home/PromptInput';
 import ImagePreview from '../components/home/ImagePreview';
 import SeedControls from '../components/home/SeedControls';
 import AspectRatioButtons from '../components/home/AspectRatioButtons';
 import LoadingAnimation from '../components/home/LoadingAnimation';
+import debounce from '../utils/debounce';
 
 const Home = () => {
   // State for prompt and image
@@ -32,28 +33,12 @@ const Home = () => {
   const handleSettingsChange = useCallback((updates: Partial<SettingsType> | ((prev: SettingsType) => Partial<SettingsType>)) => {
     setSettings((prev: SettingsType) => {
       const updatesObject = typeof updates === 'function' ? updates(prev) : updates;
-      const newSettings: SettingsType = { ...prev };
-      const isSettingsKey = (key: string): key is keyof SettingsType => key in newSettings;
-      
-      Object.entries(updatesObject).forEach(([key, value]) => {
-        if (!isSettingsKey(key) || value === undefined) return;
-        
-        switch (key) {
-          case 'width':
-          case 'height':
-            newSettings[key] = Number(value) || prev[key];
-            break;
-          case 'seed':
-          case 'model':
-            newSettings[key] = String(value);
-            break;
-          case 'transparent':
-          case 'nologo':
-            newSettings[key] = Boolean(value);
-            break;
-        }
-      });
-      
+      // Create a new settings object only if there are actual changes
+      const newSettings = { ...prev, ...updatesObject };
+      // Check if any values have actually changed to prevent unnecessary re-renders
+      if (Object.keys(updatesObject).every(key => newSettings[key as keyof SettingsType] === prev[key as keyof SettingsType])) {
+        return prev;
+      }
       return newSettings;
     });
   }, []);
@@ -104,13 +89,24 @@ const Home = () => {
   }, [handleSettingsChange]);
   
   // Memoize dimension change handlers
+  // Debounce applied to prevent excessive re-renders during slider drag
+  const debouncedHandleWidthChange = useMemo(
+    () => debounce((value: number) => handleSettingsChange({ width: value || 512 }), 100),
+    [handleSettingsChange]
+  );
+
   const handleWidthChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    handleSettingsChange({ width: parseInt(e.target.value) || 512 });
-  }, [handleSettingsChange]);
+    debouncedHandleWidthChange(parseInt(e.target.value));
+  }, [debouncedHandleWidthChange]);
   
+  const debouncedHandleHeightChange = useMemo(
+    () => debounce((value: number) => handleSettingsChange({ height: value || 512 }), 100),
+    [handleSettingsChange]
+  );
+
   const handleHeightChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    handleSettingsChange({ height: parseInt(e.target.value) || 512 });
-  }, [handleSettingsChange]);
+    debouncedHandleHeightChange(parseInt(e.target.value));
+  }, [debouncedHandleHeightChange]);
   
   // Memoize toggle handlers
   const toggleTransparent = useCallback(() => {
